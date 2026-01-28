@@ -26,10 +26,17 @@ Metadata Integration: High-accuracy genre detection to ensure a Victorian novel 
 
 ## 🚀 Tech Stack
 
-**Frontend** Next.js (React), Tailwind CSS
-**Backend** NestJS (Node.js framework)
-**Language** TypeScript
-**Database** MongoDB
+### Frontend
+Next.js (React), Tailwind CSS
+
+### Backend
+NestJS (Node.js framework)
+
+### Language
+TypeScript
+
+### Database
+MongoDB
 
 ## Getting Started
 ### Prerequisites
