@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Dynamic, mood-aware background music for an immersive reading experience",
 };
 
+import { FileProvider } from "@/context/FileContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,9 +27,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 min-h-screen`}
       >
-        {children}
+        <FileProvider>
+          {children}
+        </FileProvider>
       </body>
     </html>
   );
