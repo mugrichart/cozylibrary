@@ -5,6 +5,8 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import type { TextItem } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { useSoundPlayer } from '@/lib/hooks/useSoundPlayer';
+import { segmentTextByMood, MoodSegment } from '@/lib/moodSegmenter';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
@@ -33,6 +35,9 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [speed, setSpeed] = useState(1);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const { soundState, playMood, togglePlay: toggleSound, setVolume } = useSoundPlayer();
+    const [moodSegments, setMoodSegments] = useState<MoodSegment[]>([]);
 
     // Extract text items and group into lines by EOL
     const onPageLoadSuccess = async (page: any) => {
@@ -71,6 +76,7 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
         }
 
         setLines(extractedLines);
+        setMoodSegments(segmentTextByMood(extractedLines.map(l => l.text)));
 
         // If playing, start from top of the new page
         if (isPlaying) {
@@ -136,9 +142,11 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
         if (isPlaying) {
             setIsPlaying(false);
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (soundState.isPlaying) toggleSound();
         } else {
             setIsPlaying(true);
             if (currentIndex < 0) setCurrentIndex(0);
+            if (!soundState.isPlaying) toggleSound();
         }
     };
 
@@ -175,6 +183,18 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
         };
     }, [isPlaying, currentIndex, lines, speed, pageNumber, numPages]);
 
+    // Handle mood transitions
+    useEffect(() => {
+        if (isPlaying && currentIndex >= 0 && moodSegments.length > 0) {
+            const currentSegment = moodSegments.find(
+                s => currentIndex >= s.startIndex && currentIndex <= s.endIndex
+            );
+            if (currentSegment && currentSegment.audioPath) {
+                playMood(currentSegment.audioPath, currentSegment.mood);
+            }
+        }
+    }, [currentIndex, isPlaying, moodSegments, playMood]);
+
     // INDEX-BASED HIGHLIGHTING: Check if current item belongs to the active line
     const textRenderer = useCallback((textItem: TextItem) => {
         if (currentIndex < 0 || !lines[currentIndex]) return textItem.str;
@@ -198,8 +218,8 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
     return (
         <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 space-y-6">
             {/* Control Bar */}
-            <div className="flex flex-wrap items-center justify-between w-full bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-lg sticky top-4 z-50 border border-slate-200">
-                <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center justify-between w-full bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-lg sticky top-4 z-50 border border-slate-200 gap-4">
+                <div className="flex items-center space-x-4 shrink-0">
                     <button
                         onClick={togglePlayback}
                         className={`px-6 py-2 rounded-xl font-bold transition-all transform active:scale-95 ${isPlaying
@@ -224,22 +244,47 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-4 text-slate-600 font-medium">
-                    <button
-                        disabled={pageNumber <= 1}
-                        onClick={() => { setPageNumber(p => p - 1); setIsPlaying(false); }}
-                        className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30"
-                    >
-                        ←
-                    </button>
-                    <span>Page {pageNumber} / {numPages || '?'}</span>
-                    <button
-                        disabled={pageNumber >= (numPages || 0)}
-                        onClick={() => { setPageNumber(p => p + 1); setIsPlaying(false); }}
-                        className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30"
-                    >
-                        →
-                    </button>
+                <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-2 bg-slate-100 rounded-xl px-3 py-1">
+                        <span className="text-xs font-bold text-slate-400">VOL</span>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={soundState.volume}
+                            onChange={(e) => setVolume(parseFloat(e.target.value))}
+                            className="w-24 h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                    </div>
+                    {soundState.currentMood && (
+                        <div className="flex items-center space-x-2 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                            </span>
+                            <span className="text-xs font-semibold text-indigo-700 uppercase tracking-wider">
+                                {soundState.currentMood}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex items-center space-x-4 text-slate-600 font-medium border-l pl-6">
+                        <button
+                            disabled={pageNumber <= 1}
+                            onClick={() => { setPageNumber(p => p - 1); setIsPlaying(false); }}
+                            className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30"
+                        >
+                            ←
+                        </button>
+                        <span>Page {pageNumber} / {numPages || '?'}</span>
+                        <button
+                            disabled={pageNumber >= (numPages || 0)}
+                            onClick={() => { setPageNumber(p => p + 1); setIsPlaying(false); }}
+                            className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30"
+                        >
+                            →
+                        </button>
+                    </div>
                 </div>
             </div>
 
