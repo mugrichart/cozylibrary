@@ -110,16 +110,16 @@
         "description": "Pads, Drones, White noise, Glitches. Best for Sci-Fi, Horror, Philosophy, or Surrealism.",
         "Cognitive": {
             "Existential": [
-                "/reading-bg-sounds/ethereal-existential.wav"
+                "/reading-bg-sounds/Ethereal_Abstract/Cognitive/Existential/ethereal-existential.wav"
             ],
             "Alien_Logic": [
-                "/reading-bg-sounds/ethereal-alien-logic.wav"
+                "/reading-bg-sounds/Ethereal_Abstract/Cognitive/Alien_Logic/ethereal-alien-logic.wav"
             ],
             "Deep_Thinking": []
         },
         "Visceral": {
             "Cosmic_Horror": [
-                "/reading-bg-sounds/ethereal-cosmic-horror.wav"
+                "/reading-bg-sounds/Ethereal_Abstract/Visceral/Cosmic_Horror/ethereal-cosmic-horror.wav"
             ],
             "Uncanny": [],
             "Abyssal_Dread": [],
@@ -128,14 +128,14 @@
         "Intimate": {
             "Ethereal_Loss": [],
             "Transcendental_Peace": [
-                "/reading-bg-sounds/ethereal-transcendental-peace.m4a"
+                "/reading-bg-sounds/Ethereal_Abstract/Intimate/Transcendental_Peace/ethereal-transcendental-peace.m4a"
             ],
             "Spectral_Presence": []
         },
         "Atmosphere": {
             "Space_Void": [],
             "Dreamscape": [
-                "/reading-bg-sounds/ethereal-dreamscape.wav"
+                "/reading-bg-sounds/Ethereal_Abstract/Atmosphere/Dreamscape/ethereal-dreamscape.wav"
             ],
             "Liminal_Space": [],
             "Frozen": []
