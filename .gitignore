@@ -7,6 +7,9 @@
 *.swp
 *.swo
 
+# sounds
+/frontend/public/reading-bg-sounds
+
 # OS files
 .DS_Store
 Thumbs.db

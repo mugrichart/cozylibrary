@@ -6,7 +6,14 @@ import type { TextItem } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useSoundPlayer } from '@/lib/hooks/useSoundPlayer';
-import { segmentTextByMood, MoodSegment } from '@/lib/moodSegmenter';
+// import { segmentTextByMood, MoodSegment } from '@/lib/moodSegmenter'; // REMOVED
+
+interface MoodSegment {
+    startIndex: number;
+    endIndex: number;
+    mood: string;
+    audioUrl?: string; // Add audioUrl
+}
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
@@ -35,9 +42,21 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [speed, setSpeed] = useState(1);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pageNumberRef = useRef(pageNumber);
+
+    // Keep ref in sync with state
+    useEffect(() => {
+        pageNumberRef.current = pageNumber;
+    }, [pageNumber]);
 
     const { soundState, playMood, togglePlay: toggleSound, setVolume } = useSoundPlayer();
-    const [moodSegments, setMoodSegments] = useState<MoodSegment[]>([]);
+    const [moodCache, setMoodCache] = useState<Record<number, MoodSegment[]>>({});
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const pdfRef = useRef<any>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Debounce the page load analysis to prevent spam calls
+    const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Extract text items and group into lines by EOL
     const onPageLoadSuccess = async (page: any) => {
@@ -76,13 +95,87 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
         }
 
         setLines(extractedLines);
-        setMoodSegments(segmentTextByMood(extractedLines.map(l => l.text)));
+
+        // Pre-fetch analysis for this page and next
+        prefetchAnalysis(pageNumber);
+        if (pageNumber < (numPages || 0)) {
+            prefetchAnalysis(pageNumber + 1);
+        }
 
         // If playing, start from top of the new page
         if (isPlaying) {
             setCurrentIndex(0);
         } else {
             setCurrentIndex(-1);
+        }
+    };
+
+    const prefetchAnalysis = async (pg: number) => {
+        // Skip if already in cache or if PDF isn't loaded yet
+        if (moodCache[pg] || !pdfRef.current) return;
+
+        // If analyzing current page, show loading state
+        if (pg === pageNumberRef.current) setIsAnalyzing(true);
+
+        try {
+            const page = await pdfRef.current.getPage(pg);
+            const textContent = await page.getTextContent();
+            const items = textContent.items.filter((item: any) => 'str' in item);
+
+            // Group into lines for consistency with character mapping
+            const pageLines: string[] = [];
+            let currentLineText = '';
+            items.forEach((item: any) => {
+                currentLineText += item.str;
+                if (item.hasEOL) {
+                    if (currentLineText.trim()) pageLines.push(currentLineText.trim());
+                    currentLineText = '';
+                }
+            });
+            if (currentLineText.trim()) pageLines.push(currentLineText.trim());
+
+            const textToAnalyze = pageLines.join('\n');
+            const response = await fetch('http://localhost:3500/mood/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: textToAnalyze }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const fullText = pageLines.join('\n');
+
+                const mapped = data.map((d: any) => {
+                    const charStart = fullText.indexOf(d.start);
+                    const charEnd = fullText.indexOf(d.end) + d.end.length;
+
+                    if (charStart === -1) return { startIndex: 0, endIndex: 0, mood: d.mood, audioUrl: d.audioUrl };
+
+                    let currentLength = 0;
+                    let startLine = 0;
+                    let endLine = 0;
+
+                    for (let i = 0; i < pageLines.length; i++) {
+                        const lineLength = pageLines[i].length + 1;
+                        if (currentLength <= charStart && charStart < currentLength + lineLength) startLine = i;
+                        if (currentLength <= charEnd && charEnd <= currentLength + lineLength) endLine = i;
+                        currentLength += lineLength;
+                    }
+                    return {
+                        startIndex: startLine,
+                        endIndex: Math.max(startLine, endLine),
+                        mood: d.mood,
+                        audioUrl: d.audioUrl
+                    };
+                });
+
+                setMoodCache(prev => ({ ...prev, [pg]: mapped }));
+                console.log(`Mood analysis for Page ${pg}:`, mapped);
+            }
+        } catch (e) {
+            console.error(`Analysis failed for page ${pg}`, e);
+        } finally {
+            if (pg === pageNumberRef.current) setIsAnalyzing(false);
         }
     };
 
@@ -185,15 +278,16 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
 
     // Handle mood transitions
     useEffect(() => {
-        if (isPlaying && currentIndex >= 0 && moodSegments.length > 0) {
-            const currentSegment = moodSegments.find(
+        const currentSegments = moodCache[pageNumber];
+        if (isPlaying && currentIndex >= 0 && currentSegments && currentSegments.length > 0) {
+            const currentSegment = currentSegments.find(
                 s => currentIndex >= s.startIndex && currentIndex <= s.endIndex
             );
-            if (currentSegment && currentSegment.audioPath) {
-                playMood(currentSegment.audioPath, currentSegment.mood);
+            if (currentSegment && currentSegment.audioUrl) {
+                playMood(currentSegment.audioUrl, currentSegment.mood);
             }
         }
-    }, [currentIndex, isPlaying, moodSegments, playMood]);
+    }, [currentIndex, isPlaying, moodCache, pageNumber, playMood]);
 
     // INDEX-BASED HIGHLIGHTING: Check if current item belongs to the active line
     const textRenderer = useCallback((textItem: TextItem) => {
@@ -222,12 +316,13 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
                 <div className="flex items-center space-x-4 shrink-0">
                     <button
                         onClick={togglePlayback}
+                        disabled={isAnalyzing}
                         className={`px-6 py-2 rounded-xl font-bold transition-all transform active:scale-95 ${isPlaying
                             ? 'bg-rose-500 text-white shadow-lg shadow-rose-100'
                             : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
                             }`}
                     >
-                        {isPlaying ? '⏸ Pause' : '▶ Start Reading'}
+                        {isPlaying ? '⏸ Pause' : isAnalyzing ? 'Analyzing...' : '▶ Start Reading'}
                     </button>
 
                     <div className="flex items-center bg-slate-100 rounded-xl p-1">
@@ -276,7 +371,22 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
                         >
                             ←
                         </button>
-                        <span>Page {pageNumber} / {numPages || '?'}</span>
+                        <div className="flex items-center space-x-2">
+                            <span>Page</span>
+                            <input
+                                type="number"
+                                value={pageNumber}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 1 && val <= (numPages || 1)) {
+                                        setPageNumber(val);
+                                        setIsPlaying(false);
+                                    }
+                                }}
+                                className="w-12 px-1 py-0.5 border border-slate-300 rounded text-center text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                            <span>/ {numPages || '?'}</span>
+                        </div>
                         <button
                             disabled={pageNumber >= (numPages || 0)}
                             onClick={() => { setPageNumber(p => p + 1); setIsPlaying(false); }}
@@ -292,7 +402,10 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
             <div className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-100 min-h-[800px]">
                 <Document
                     file={file}
-                    onLoadSuccess={(pdf) => setNumPages(pdf.numPages)}
+                    onLoadSuccess={(pdf) => {
+                        pdfRef.current = pdf;
+                        setNumPages(pdf.numPages);
+                    }}
                     className="flex justify-center"
                 >
                     <Page

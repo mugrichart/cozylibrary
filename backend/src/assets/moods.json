@@ -1,0 +1,134 @@
+{
+    "Organic_Ancient": {
+        "description": "Raw, primitive, wood/stone/skin instruments. Best for Historical, Tribal, or survivalist settings.",
+        "Cognitive": [
+            "Observational",
+            "Puzzled",
+            "Scholarly",
+            "Calculating"
+        ],
+        "Visceral": [
+            "Primal_Fear",
+            "Combat",
+            "The_Hunt",
+            "Ominous",
+            "Urgent"
+        ],
+        "Intimate": [
+            "Grief",
+            "Longing",
+            "Tender",
+            "Ancient_Relief"
+        ],
+        "Atmosphere": [
+            "Wilderness",
+            "Mystical",
+            "Desolate",
+            "Ritualistic"
+        ]
+    },
+    "Classical_Royal": {
+        "description": "Strings, Brass, Harpsichord, Piano. Best for Regency, Victorian, Epic Fantasy, or High Drama.",
+        "Cognitive": [
+            "Analytical",
+            "Curious",
+            "Whimsical",
+            "Strategizing"
+        ],
+        "Visceral": [
+            "Grand_Conflict",
+            "Tense_Standoff",
+            "Dread",
+            "High_Society_Stress"
+        ],
+        "Intimate": [
+            "Romantic",
+            "Bittersweet",
+            "Tragic",
+            "Courtly_Affection",
+            "Nostalgic"
+        ],
+        "Atmosphere": [
+            "Majestic",
+            "Pastoral",
+            "Opulent",
+            "Lonely_Castle"
+        ]
+    },
+    "Industrial_Gritty": {
+        "description": "Distorted, metallic, heavy bass, electric. Best for Noir, Cyberpunk, Dystopian, or Thrillers.",
+        "Cognitive": [
+            "Digital_Focus",
+            "Paranoid",
+            "Deciphering"
+        ],
+        "Visceral": [
+            "Panic",
+            "Street_Chase",
+            "Aggressive",
+            "Gritty_Suspense"
+        ],
+        "Intimate": [
+            "Cold_Loneliness",
+            "Fragile_Hope",
+            "Melancholic_Neon"
+        ],
+        "Atmosphere": [
+            "Urban_Bustle",
+            "Mechanical",
+            "Damp_Underground",
+            "Decaying"
+        ]
+    },
+    "Contemporary_Minimal": {
+        "description": "Acoustic guitar, Lo-fi beats, Soft Piano, Clean Synths. Best for YA, Modern Fiction, or Non-Fiction.",
+        "Cognitive": [
+            "Focused",
+            "Steady",
+            "Daydreaming",
+            "Reflective"
+        ],
+        "Visceral": [
+            "Modern_Anxiety",
+            "Sudden_Shock",
+            "Social_Pressure"
+        ],
+        "Intimate": [
+            "Gentle_Love",
+            "Heartbreak",
+            "Cozy",
+            "Wistful"
+        ],
+        "Atmosphere": [
+            "Domestic",
+            "Breezy",
+            "Lonely_City",
+            "Suburban_Quiet"
+        ]
+    },
+    "Ethereal_Abstract": {
+        "description": "Pads, Drones, White noise, Glitches. Best for Sci-Fi, Horror, Philosophy, or Surrealism.",
+        "Cognitive": [
+            "Existential",
+            "Alien_Logic",
+            "Deep_Thinking"
+        ],
+        "Visceral": [
+            "Cosmic_Horror",
+            "Uncanny",
+            "Abyssal_Dread",
+            "Disorienting"
+        ],
+        "Intimate": [
+            "Ethereal_Loss",
+            "Transcendental_Peace",
+            "Spectral_Presence"
+        ],
+        "Atmosphere": [
+            "Space_Void",
+            "Dreamscape",
+            "Liminal_Space",
+            "Frozen"
+        ]
+    }
+}

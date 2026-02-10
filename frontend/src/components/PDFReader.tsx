@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { ChevronLeft, ChevronRight, Upload, BookOpen, Music, Headphones } from 'lucide-react';
+import { useSoundPlayer } from '@/lib/hooks/useSoundPlayer';
 
 // Configure the worker. Since we are in a Next.js environment, 
 // using a CDN is often more reliable than manual worker configuration 
@@ -14,10 +15,23 @@ export default function PDFReader() {
     const [currentPage, setCurrentPage] = useState(1);
     const [numPages, setNumPages] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
+    const [moodSections, setMoodSections] = useState<any[]>([]);
+    const [isReading, setIsReading] = useState(false);
     const [paragraphs, setParagraphs] = useState<string[]>([]);
     const [currentText, setCurrentText] = useState("");
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const renderTaskRef = useRef<any>(null);
+    const { playMood, soundState } = useSoundPlayer();
+
+    useEffect(() => {
+        if (isReading && moodSections.length > 0) {
+            const current = moodSections[0];
+            if (current?.audioUrl) {
+                playMood(current.audioUrl, current.mood);
+            }
+        }
+    }, [isReading, moodSections, playMood]);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -103,12 +117,36 @@ export default function PDFReader() {
 
             setParagraphs(detectedParagraphs);
             setCurrentText(detectedParagraphs[0] || ""); // Show first paragraph as "current"
+
+            // Analyze mood for the extracted text
+            analyzeMood(detectedParagraphs.join("\n"));
         } catch (err: any) {
             if (err.name === 'RenderingCancelledException') {
                 console.log('Rendering cancelled');
             } else {
                 console.error("Error rendering page:", err);
             }
+        }
+    };
+
+    const analyzeMood = async (text: string) => {
+        if (!text.trim()) return;
+        setAnalyzing(true);
+        setMoodSections([]);
+        try {
+            const response = await fetch('http://localhost:3500/mood/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text }),
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setMoodSections(data);
+            }
+        } catch (error) {
+            console.error("Failed to analyze mood:", error);
+        } finally {
+            setAnalyzing(false);
         }
     };
 
@@ -176,14 +214,40 @@ export default function PDFReader() {
                             <div className="pt-6 border-t border-border">
                                 <div className="bg-gold/5 border border-gold/20 rounded-2xl p-4 space-y-2 text-xs">
                                     <p className="font-bold text-gold">Immersive Analysis</p>
-                                    <p className="text-muted-foreground leading-relaxed">
-                                        We're currently identifying the emotional landscape of your book to sync the music.
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                                        <span className="text-blue-400 font-medium">Processing Chapter Sentiment</span>
-                                    </div>
+                                    {analyzing ? (
+                                        <>
+                                            <p className="text-muted-foreground leading-relaxed">
+                                                We're currently identifying the emotional landscape of your book to sync the music.
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                                                <span className="text-blue-400 font-medium">Processing Chapter Sentiment</span>
+                                            </div>
+                                        </>
+                                    ) : moodSections.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <p className="text-muted-foreground leading-relaxed">
+                                                Analysis complete. ({moodSections.length} mood changes detected)
+                                            </p>
+                                            <button
+                                                onClick={() => setIsReading(true)}
+                                                className="w-full bg-gold text-gold-foreground py-2 rounded-lg font-bold text-xs hover:brightness-110 active:scale-95 transition-all"
+                                            >
+                                                START READING
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted-foreground leading-relaxed">
+                                            Waiting for analysis...
+                                        </p>
+                                    )}
                                 </div>
+                                {isReading && moodSections.length > 0 && (
+                                    <div className="mt-4 p-4 border border-gold/20 rounded-2xl bg-black/40">
+                                        <p className="text-xs text-gold font-bold mb-2">NOW PLAYING</p>
+                                        <p className="text-sm font-medium text-white">{moodSections[0]?.mood || "Unknown Mood"}</p>
+                                    </div>
+                                )}
                             </div>
                         </>
                     ) : (
