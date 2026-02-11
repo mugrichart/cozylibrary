@@ -31,7 +31,7 @@ interface ReadingLine {
     itemIndices: number[];
 }
 
-const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
 
 export default function ReadingMachine({ file }: ReadingMachineProps) {
     const [numPages, setNumPages] = useState<number | null>(null);
@@ -325,17 +325,45 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
                         {isPlaying ? '⏸ Pause' : isAnalyzing ? 'Analyzing...' : '▶ Start Reading'}
                     </button>
 
-                    <div className="flex items-center bg-slate-100 rounded-xl p-1">
-                        {speedOptions.map(s => (
-                            <button
-                                key={s}
-                                onClick={() => setSpeed(s)}
-                                className={`px-3 py-1 rounded-lg text-sm transition-colors ${speed === s ? 'bg-white shadow-sm font-bold text-indigo-600' : 'text-slate-500 hover:text-slate-800'
-                                    }`}
+                    <div className="flex flex-col items-center min-w-[210px] px-2 group/speed">
+                        <div className="flex justify-between w-full px-[2px] mb-1">
+                            {[0.5, 1.0, 1.5, 2.0, 2.5].map(v => (
+                                <button
+                                    key={v}
+                                    onClick={() => setSpeed(v)}
+                                    className="flex flex-col items-center group/marker cursor-pointer"
+                                    title={`Snap to ${v}x`}
+                                >
+                                    <div className={`w-px transition-all duration-300 ${Math.abs(speed - v) < 0.05 ? 'bg-indigo-600 h-2.5 w-0.5' : 'bg-slate-300 h-1.5 group-hover/marker:bg-slate-400'}`}></div>
+                                    <span className={`text-[9px] mt-0.5 font-bold transition-colors ${Math.abs(speed - v) < 0.05 ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                        {v.toFixed(1)}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="relative w-full group">
+                            <input
+                                type="range"
+                                min="0.5"
+                                max="2.5"
+                                step="0.01"
+                                value={speed}
+                                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                                className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                            {/* Floating Tooltip */}
+                            <div
+                                className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg whitespace-nowrap z-60 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-indigo-600"
+                                style={{ left: `${((speed - 0.5) / 2) * 100}%` }}
                             >
-                                {s}x
-                            </button>
-                        ))}
+                                {speed.toFixed(2)}x
+                            </div>
+                            <div
+                                className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 text-[9px] font-black text-indigo-500/60 uppercase tracking-tighter transition-opacity group-hover/speed:opacity-0"
+                            >
+                                Speed: {speed.toFixed(2)}x
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -431,6 +459,35 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
                     color: inherit !important;
                     padding: 2px 0;
                     border-radius: 4px;
+                }
+
+                /* Premium Slider Styling */
+                input[type="range"].accent-indigo-600::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    appearance: none;
+                    width: 18px;
+                    height: 18px;
+                    background: #4f46e5;
+                    border: 3px solid white;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+                    transition: all 0.2s ease;
+                }
+
+                input[type="range"].accent-indigo-600::-webkit-slider-thumb:hover {
+                    transform: scale(1.15);
+                    box-shadow: 0 6px 15px rgba(79, 70, 229, 0.4);
+                }
+
+                input[type="range"].accent-indigo-600::-moz-range-thumb {
+                    width: 18px;
+                    height: 18px;
+                    background: #4f46e5;
+                    border: 3px solid white;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
                 }
             `}</style>
         </div>
