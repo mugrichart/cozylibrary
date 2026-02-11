@@ -8,9 +8,10 @@ import { useEffect } from 'react';
 
 export default function UploadPage() {
     const { setFile } = useFile();
-    const { user, isLoading } = useAuth();
+    const { user, token, isLoading } = useAuth();
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = React.useState(false);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -18,11 +19,82 @@ export default function UploadPage() {
         }
     }, [user, isLoading, router]);
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file && (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
-            setFile(file);
-            router.push('/reading');
+        if (!file || !token) return;
+
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+            setIsUploading(true);
+            try {
+                // Generate cover image from first page
+                console.log('Starting cover generation...');
+                const coverBlob = await generateCoverFromPDF(file);
+                console.log('Cover generated:', coverBlob);
+
+                const formData = new FormData();
+                formData.append('file', file);
+                if (coverBlob) {
+                    formData.append('cover', coverBlob, 'cover.png');
+                    console.log('Cover added to form data');
+                } else {
+                    console.warn('No cover blob generated');
+                }
+
+                const response = await fetch('http://localhost:3500/books/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const book = await response.json();
+                    console.log('Book uploaded:', book);
+                    setFile(file); // Keep local file for immediate rendering
+                    router.push(`/reading?bookId=${book._id}`);
+                } else {
+                    console.error('Upload failed:', await response.text());
+                }
+            } catch (error) {
+                console.error("Upload failed", error);
+            } finally {
+                setIsUploading(false);
+            }
+        }
+    };
+
+    const generateCoverFromPDF = async (file: File): Promise<Blob | null> => {
+        try {
+            const pdfjs = await import('pdfjs-dist');
+
+            // Set worker source
+            pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+            const page = await pdf.getPage(1);
+
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            if (!context) return null;
+
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            await page.render({
+                canvasContext: context,
+                viewport: viewport,
+            }).promise;
+
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => resolve(blob), 'image/png');
+            });
+        } catch (error) {
+            console.error('Failed to generate cover:', error);
+            return null;
         }
     };
 
@@ -46,15 +118,24 @@ export default function UploadPage() {
                 />
 
                 <div
-                    onClick={() => inputRef.current?.click()}
-                    className="group border-4 border-dashed border-slate-100 rounded-4xl p-12 hover:bg-slate-50 hover:border-indigo-100 transition-all cursor-pointer"
+                    onClick={() => !isUploading && inputRef.current?.click()}
+                    className={`group border-4 border-dashed border-slate-100 rounded-4xl p-12 hover:bg-slate-50 hover:border-indigo-100 transition-all ${isUploading ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}
                 >
-                    <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 group-hover:bg-indigo-700 transition-all">
-                        Select File
-                    </button>
-                    <p className="mt-6 text-sm text-slate-400 font-bold uppercase tracking-widest leading-none">
-                        Drop PDF Here
-                    </p>
+                    {isUploading ? (
+                        <div className="flex flex-col items-center space-y-4">
+                            <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                            <p className="text-indigo-600 font-bold">Generating cover & uploading...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 group-hover:bg-indigo-700 transition-all">
+                                Select File
+                            </button>
+                            <p className="mt-6 text-sm text-slate-400 font-bold uppercase tracking-widest leading-none">
+                                Drop PDF Here
+                            </p>
+                        </>
+                    )}
                 </div>
 
                 <div className="pt-4">

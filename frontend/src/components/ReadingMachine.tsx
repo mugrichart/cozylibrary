@@ -7,6 +7,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useSoundPlayer } from '@/lib/hooks/useSoundPlayer';
 import { useAuth } from '@/context/AuthContext';
+import { useSearchParams } from 'next/navigation';
 // import { segmentTextByMood, MoodSegment } from '@/lib/moodSegmenter'; // REMOVED
 
 interface MoodSegment {
@@ -36,9 +37,53 @@ interface ReadingLine {
 
 export default function ReadingMachine({ file }: ReadingMachineProps) {
     const { token, logout } = useAuth();
+    const searchParams = useSearchParams();
+    const bookId = searchParams.get('bookId');
+
     const [numPages, setNumPages] = useState<number | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [pageItems, setPageItems] = useState<TextItem[]>([]);
+
+    // Load progress
+    useEffect(() => {
+        if (!bookId || !token) return;
+
+        const loadProgress = async () => {
+            try {
+                const response = await fetch(`http://localhost:3500/books/${bookId}/progress`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.lastPage) setPageNumber(data.lastPage);
+                }
+            } catch (err) {
+                console.error("Failed to load progress", err);
+            }
+        };
+        loadProgress();
+    }, [bookId, token]);
+
+    // Save progress
+    useEffect(() => {
+        if (!bookId || !token || pageNumber === 1) return;
+
+        const saveProgress = async () => {
+            try {
+                await fetch(`http://localhost:3500/books/${bookId}/progress`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ page: pageNumber })
+                });
+            } catch (err) {
+                console.error("Failed to save progress", err);
+            }
+        };
+        saveProgress();
+    }, [pageNumber, bookId, token]);
     const [lines, setLines] = useState<ReadingLine[]>([]);
     const [currentIndex, setCurrentIndex] = useState<number>(-1);
     const [isPlaying, setIsPlaying] = useState(false);

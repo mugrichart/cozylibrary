@@ -14,6 +14,8 @@ export default function Home() {
         <div className="fixed top-8 right-8 z-50">
           {user ? (
             <div className="flex items-center space-x-4 bg-white/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-slate-200 shadow-sm">
+              <Link href="/library" className="text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors">Library</Link>
+              <div className="w-px h-4 bg-slate-200"></div>
               <div className="flex flex-col items-end">
                 <span className="text-xs font-bold text-slate-400 leading-none">SIGNED IN AS</span>
                 <span className="text-sm font-black text-slate-900">{user.name || user.email}</span>
@@ -46,10 +48,10 @@ export default function Home() {
 
       <div className="flex flex-wrap items-center justify-center gap-6">
         <Link
-          href="/upload"
+          href="/library"
           className="px-10 py-5 bg-indigo-600 text-white rounded-2xl font-bold text-xl shadow-2xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95"
         >
-          Start Reading Now
+          My Library
         </Link>
         <button
           className="px-10 py-5 bg-white text-slate-700 border-2 border-slate-200 rounded-2xl font-bold text-xl hover:bg-slate-50 transition-all active:scale-95"
