@@ -62,6 +62,32 @@ export default function LibraryPage() {
         }
     };
 
+    const handleDeleteBook = async (bookId: string, bookTitle: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent opening the book when clicking delete
+
+        if (!confirm(`Are you sure you want to delete "${bookTitle}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:3500/books/${bookId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                // Remove the book from the local state
+                setBooks(books.filter(book => book._id !== bookId));
+            } else {
+                console.error("Failed to delete book");
+                alert("Failed to delete book. Please try again.");
+            }
+        } catch (err) {
+            console.error("Failed to delete book", err);
+            alert("Failed to delete book. Please try again.");
+        }
+    };
+
     if (authLoading || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -109,6 +135,17 @@ export default function LibraryPage() {
                                 className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-indigo-100 hover:-translate-y-2 transition-all cursor-pointer relative overflow-hidden"
                             >
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
+
+                                {/* Delete Button */}
+                                <button
+                                    onClick={(e) => handleDeleteBook(book._id, book.title, e)}
+                                    className="absolute top-6 right-6 z-10 w-10 h-10 bg-red-500 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:scale-110 active:scale-95 shadow-lg"
+                                    title="Delete book"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
 
                                 <div className="relative space-y-4">
                                     {book.coverImageUrl ? (

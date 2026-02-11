@@ -9,7 +9,8 @@ import {
     UseGuards,
     Request,
     Param,
-    Patch
+    Patch,
+    Delete
 } from '@nestjs/common';
 import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { BooksService } from './books.service';
@@ -72,5 +73,11 @@ export class BooksController {
     async getProgress(@Param('id') bookId: string, @Request() req) {
         const record = await this.booksService.getProgress(req.user.id, bookId);
         return record || { lastPage: 1 };
+    }
+
+    @Delete(':id')
+    async deleteBook(@Param('id') bookId: string, @Request() req) {
+        await this.booksService.deleteBook(bookId, req.user.id);
+        return { message: 'Book deleted successfully' };
     }
 }
