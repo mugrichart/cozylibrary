@@ -3,11 +3,20 @@
 import React, { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFile } from '@/context/FileContext';
+import { useAuth } from '@/context/AuthContext';
+import { useEffect } from 'react';
 
 export default function UploadPage() {
     const { setFile } = useFile();
+    const { user, isLoading } = useAuth();
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!isLoading && !user) {
+            router.push('/login');
+        }
+    }, [user, isLoading, router]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -38,7 +47,7 @@ export default function UploadPage() {
 
                 <div
                     onClick={() => inputRef.current?.click()}
-                    className="group border-4 border-dashed border-slate-100 rounded-[2rem] p-12 hover:bg-slate-50 hover:border-indigo-100 transition-all cursor-pointer"
+                    className="group border-4 border-dashed border-slate-100 rounded-4xl p-12 hover:bg-slate-50 hover:border-indigo-100 transition-all cursor-pointer"
                 >
                     <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-100 group-hover:bg-indigo-700 transition-all">
                         Select File

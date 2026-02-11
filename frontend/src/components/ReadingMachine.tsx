@@ -6,6 +6,7 @@ import type { TextItem } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { useSoundPlayer } from '@/lib/hooks/useSoundPlayer';
+import { useAuth } from '@/context/AuthContext';
 // import { segmentTextByMood, MoodSegment } from '@/lib/moodSegmenter'; // REMOVED
 
 interface MoodSegment {
@@ -34,6 +35,7 @@ interface ReadingLine {
 
 
 export default function ReadingMachine({ file }: ReadingMachineProps) {
+    const { token, logout } = useAuth();
     const [numPages, setNumPages] = useState<number | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [pageItems, setPageItems] = useState<TextItem[]>([]);
@@ -97,15 +99,15 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
         setLines(extractedLines);
 
         // Pre-fetch analysis for this page and next
-        prefetchAnalysis(pageNumber);
-        if (pageNumber < (numPages || 0)) {
-            prefetchAnalysis(pageNumber + 1);
+        prefetchAnalysis(page.pageNumber);
+        if (page.pageNumber < (numPages || 0)) {
+            prefetchAnalysis(page.pageNumber + 1);
         }
 
         // If playing, start from top of the new page
         if (isPlaying) {
             setCurrentIndex(0);
-        } else {
+        } else if (currentIndex < 0) {
             setCurrentIndex(-1);
         }
     };
@@ -137,9 +139,18 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
             const textToAnalyze = pageLines.join('\n');
             const response = await fetch('http://localhost:3500/mood/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ text: textToAnalyze }),
             });
+
+            if (response.status === 401) {
+                console.error("Session expired. Logging out.");
+                logout();
+                return;
+            }
 
             if (response.ok) {
                 const data = await response.json();
@@ -256,18 +267,21 @@ export default function ReadingMachine({ file }: ReadingMachineProps) {
             const duration = getLineDuration(currentLine?.text || "");
 
             timeoutRef.current = setTimeout(() => {
-                setCurrentIndex(prev => {
-                    const next = prev + 1;
-                    if (next >= lines.length) {
-                        if (pageNumber < (numPages || 0)) {
-                            setPageNumber(p => p + 1);
-                            return 0;
-                        }
+                const isLastLine = currentIndex >= lines.length - 1;
+
+                if (isLastLine) {
+                    if (pageNumber < (numPages || 0)) {
+                        console.log(`End of page ${pageNumber}. Transitioning to ${pageNumber + 1}`);
+                        setPageNumber(p => p + 1);
+                        setLines([]); // IMMEDIATELY clear lines to prevent effect from re-running with old page data
+                        setCurrentIndex(-1); // Reset to waiting state
+                    } else {
+                        console.log("End of document reached.");
                         setIsPlaying(false);
-                        return prev;
                     }
-                    return next;
-                });
+                } else {
+                    setCurrentIndex(prev => prev + 1);
+                }
             }, duration);
         }
 

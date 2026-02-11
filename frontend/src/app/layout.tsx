@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { FileProvider } from "@/context/FileContext";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function RootLayout({
   children,
@@ -29,9 +30,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 min-h-screen`}
       >
-        <FileProvider>
-          {children}
-        </FileProvider>
+        <AuthProvider>
+          <FileProvider>
+            {children}
+          </FileProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -2,11 +2,40 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Home() {
+  const { user, logout, isLoading } = useAuth();
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[90vh] px-4 text-center space-y-12">
-      <div className="space-y-6 max-w-3xl">
+      {/* Auth Header */}
+      {!isLoading && (
+        <div className="fixed top-8 right-8 z-50">
+          {user ? (
+            <div className="flex items-center space-x-4 bg-white/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-slate-200 shadow-sm">
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-bold text-slate-400 leading-none">SIGNED IN AS</span>
+                <span className="text-sm font-black text-slate-900">{user.name || user.email}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="w-10 h-10 flex items-center justify-center bg-rose-50 text-rose-500 rounded-full hover:bg-rose-500 hover:text-white transition-all shadow-inner"
+                title="Log Out"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-3 bg-white/80 backdrop-blur-md p-1.5 rounded-full border border-slate-200 shadow-sm">
+              <Link href="/login" className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors">Sign In</Link>
+              <Link href="/register" className="px-5 py-2 text-sm font-bold bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">Sign Up</Link>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-6 max-w-3xl pt-12">
         <h1 className="text-6xl font-black text-slate-900 tracking-tight leading-tight">
           Read with <span className="text-indigo-600">Precision</span> & <span className="text-indigo-600">Focus</span>
         </h1>
