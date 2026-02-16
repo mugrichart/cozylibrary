@@ -60,5 +60,3 @@ frontend: pnpm run dev
 backend: pnpm start:dev
 
 ## Roadmap
-- [ ] Third-Party Integration: Connect Spotify and YouTube Music APIs.
-- [ ] User Customization: Allow readers to override mood-mappings with personal playlists.
