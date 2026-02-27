@@ -59,5 +59,4 @@ Create a .env file in the root directory
 frontend: pnpm run dev
 backend: pnpm start:dev
 
-## Roadmap
 
