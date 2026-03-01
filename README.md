@@ -56,7 +56,8 @@ pnpm install
 3. Set up Environment Variables
 Create a .env file in the root directory
 4. Run the application
-frontend: pnpm run dev
-backend: pnpm start:dev
+frontend: npm run dev
+backend: npm start:dev
+
 
 
