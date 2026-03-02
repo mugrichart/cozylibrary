@@ -30,7 +30,7 @@ Metadata Integration: High-accuracy genre detection to ensure a Victorian novel 
 Next.js (React), Tailwind CSS
 
 ### Backend
-NestJS (Node.js framework)
+NestJS (Node.js )
 
 ### Language
 TypeScript
@@ -58,6 +58,7 @@ Create a .env file in the root directory
 4. Run the application
 frontend: npm run dev
 backend: npm start:dev
+
 
 
 
