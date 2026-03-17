@@ -33,7 +33,7 @@ Next.js (React), Tailwind CSS
 NestJS (Node.js )
 
 ### Language
-TypeScript
+TS
 
 ### Database
 MongoDB
