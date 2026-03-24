@@ -12,7 +12,7 @@ Cozy Library employs a multi-layered analysis to ensure audio-visual synchrony:
 Extracts static metadata (Genre, Author, Period) to set the overarching musical "theme."
 
 ### 2. Sentiment Mapping
-Processes chapter-level text to identify shifting moods (e.g., suspense, joy, melancholy).
+Processes chapter-level text to identify shifting moods (e.g., suspense, joy, melancholy)
 
 ### 3. Curation Engine
 Cross-references the theme and current mood to trigger seamless audio transitions via our library or external providers.
