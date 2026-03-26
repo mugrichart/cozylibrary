@@ -1,7 +1,7 @@
 
 # 📖 Cozy Library
 
-## Dynamic, mood-aware background music for an immersive reading experience
+## Dynamic, mood-aware background music for an immersive reading experience.
 
 **Cozy Library** bridges the gap between literature and sound. It solves the mismatch where a high-tension thriller chapter is accidentally paired with a lo-fi chill beat. By analyzing metadata and real-time text sentiment, Cozy Library curates a soundscape that evolves with your story.
 
